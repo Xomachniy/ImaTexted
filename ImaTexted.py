@@ -25,11 +25,16 @@ class Player(GameSprite):
         self.def_ = True
     def Undefence(self):
         self.def_ = False
-    def attack(self, attacked):
+    def attacking(self, attacked):
         if attacked.defence > 0:
             attacked.defence -= self.attack
         if attacked.defence <= 0:
             attacked.hp -= self.attack
+    def WeakAttack(self, attacked):
+        if attacked.defence > 0:
+            attacked.defence -= self.attack//3
+        if attacked.defence <= 0:
+            attacked.hp -= self.attack//3
 
 class Knight(Player):
     def ArmorRegen(self):
@@ -39,12 +44,12 @@ class Knight(Player):
         return
 class Archer(Player):
     def Dodge(self):
-        dodge = randint(1, 21)
+        dodge = randint(1, 20)
         if dodge == 20:
             NoDamage == True
             return
     def miss(self):
-        miss = randint(1, 11)
+        miss = randint(1, 10)
         if dodge == 10:
             pass
 class Mage(Player):
@@ -79,6 +84,9 @@ City = transform.scale(image.load('City.jpg'), (900, 600))
 
 RPGLogo = transform.scale(image.load('RPGLogo.png'), (512, 128))
 Back = transform.scale(image.load('Background.png'), (128, 256))
+TextBack = transform.scale(image.load('Background.png'), (900, 150))
+HpBack = transform.scale(image.load('Background.png'), (150, 100))
+ButtonBack = transform.scale(image.load('Button.png'), (150, 26))
 
 KnightArt = transform.scale(image.load('Warrior.png'), (128, 128))
 ArcherArt = transform.scale(image.load('Archer.png'), (128, 128))
@@ -106,6 +114,14 @@ PlainClear = True
 Plain2Clear = True
 CityClear = True
 MusicReload = False
+PlayerMage = False
+battlemode = False
+startBattle = False
+Defending = False
+Attacks = False
+EnemyAttack = False
+EnemyDefend = False
+MoveWas = False
 
 game = True
 while game == True:
@@ -144,27 +160,82 @@ while game == True:
             window.blit(fontText.render('ману при защите.',True,(255, 255, 255)), (672, 455))
             if e.type == KEYDOWN:
                 if e.key == K_1:
-                    Player = Knight('Warrior.png', 200, 200, 100, 350, 150, 50, 30)
+                    RealPlayer = Knight('Warrior.png', 200, 200, 100, 350, 150, 50, 30)
                     StartScreen = False
                     ForestClear = False
                     MusicReload = True
                 if e.key == K_2:
-                    Player = Archer('Archer.png', 200, 200, 100, 350, 150, 50, 30)
+                    RealPlayer = Archer('Archer.png', 200, 200, 100, 350, 100, 50, 30)
                     StartScreen = False
                     ForestClear = False
                     MusicReload = True
                 if e.key == K_3:
-                    Player = Mage('Mage.png', 200, 200, 100, 350, 150, 50, 30, 100)
+                    RealPlayer = Mage('Mage.png', 200, 200, 100, 350, 75, 100, 30, 100)
                     StartScreen = False
                     ForestClear = False
                     MusicReload = True
+                    PlayerMage = True
         if ForestClear == False:
             if MusicReload == True:
                 mixer.music.load('Forest.ogg')
                 mixer.music.play()
                 MusicReload = False
             window.blit(Forest, (0, 0))
-            Player.reset()
+            window.blit(TextBack, (0, 0))
+            window.blit(HpBack, (0, 150))
+            window.blit(HpBack, (750, 150))
+            window.blit(ButtonBack, (0, 250))
+            window.blit(ButtonBack, (0, 276))
+            window.blit(fontTXT.render('ОЗ: ' + str(RealPlayer.hp) + '/' + str(RealPlayer.MaxHp),True,(255, 0, 0)), (0, 170))
+            window.blit(fontTXT.render('Защита: ' + str(RealPlayer.defence) + '/' + str(RealPlayer.MaxDefence),True,(255, 255, 255)), (0, 190))
+            window.blit(fontTXT.render('1.Атака',True,(255, 255, 255)), (3, 252))
+            window.blit(fontTXT.render('2.Защита',True,(255, 255, 255)), (3, 278))
+            if PlayerMage == True:
+                window.blit(fontTXT.render('Мана: ' + str(RealPlayer.mana) + '/' + str(RealPlayer.maxMana),True,(0, 0, 255)), (0, 210))
+            if battlemode == False:
+                EnemyNum = randint(1, 1)
+                if EnemyNum == 1:
+                    Enemy = Player('BanditLeft.png', 200, 200, 600, 350, 100, 25, 25)
+                battlemode = True
+            if battlemode == True:
+                if RealPlayer.hp > 0 and Enemy.hp > 0:
+                    if e.type == KEYDOWN:
+                        if e.key == K_1:
+                            if Enemy.def_ == True:
+                                RealPlayer.WeakAttack(Enemy)
+                            else:
+                                RealPlayer.attacking(Enemy)
+                            MoveWas = True
+                        if e.key == K_2:
+                            RealPlayer.Defence()
+                            MoveWas = True
+                    if MoveWas == True:
+                        Enemy.Undefence()
+                        if EnemyAttack == True:
+                            if RealPlayer.def_ == True:
+                                Enemy.WeakAttack(RealPlayer)
+                            else:
+                                Enemy.attacking(RealPlayer)
+                            EnemyAttack = False
+                        else:
+                            EnemyMove = randint(1, 2)
+                            if EnemyMove == 1:
+                                window.blit(fontTXT.render('Враг замахивается',True,(255, 255, 255)), (0, 0))
+                                EnemyAttack = True
+                            if EnemyMove == 2:
+                                window.blit(fontTXT.render('Враг пытается защититься',True,(255, 255, 255)), (0, 0))
+                                Enemy.Defence()
+                        if RealPlayer.defence < 0:
+                            RealPlayer.defence = 0
+                        if Enemy.defence < 0:
+                            Enemy.defence = 0
+                        MoveWas = False
+                        RealPlayer.Undefence()
+
+                window.blit(fontTXT.render('ОЗ: ' + str(Enemy.hp) + '/' + str(Enemy.MaxHp),True,(255, 0, 0)), (750, 170))
+                window.blit(fontTXT.render('Защита: ' + str(Enemy.defence) + '/' + str(Enemy.MaxDefence),True,(255, 255, 255)), (750, 190))
+                Enemy.reset()
+            RealPlayer.reset()
 
     clock.tick(fps)
     display.update()
